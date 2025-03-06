@@ -1,51 +1,61 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
+from flask_migrate import Migrate  # Importa Flask-Migrate
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 import os
-from datetime import datetime
+from datetime import datetime  # Importa datetime per la data di creazione
 
 import cloudinary
 import cloudinary.uploader
 import cloudinary.api
 
 cloudinary.config(
-    cloud_name="dwhqxqd6f",
-    api_key="442426661533797",
-    api_secret="dUGLN7iPxGo1Zq5A6JgRpKdnG-0"
+    cloud_name="dwhqxqd6f",  # Sostituisci con il tuo Cloud Name
+    api_key="442426661533797",        # Sostituisci con la tua API Key
+    api_secret="dUGLN7iPxGo1Zq5A6JgRpKdnG-0"   # Sostituisci con la tua API Secret
 )
 
+# Configurazione dell'app Flask
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///blog.db')  # Usa PostgreSQL su Render
-app.config['SECRET_KEY'] = 'supersecretkey'
-app.config['UPLOAD_FOLDER'] = 'static/uploads'
-app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif'}
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////home/alex26/instance/blog.db'  # Percorso assoluto per SQLite
+app.config['SECRET_KEY'] = 'supersecretkey'  # Chiave segreta per le sessioni
+app.config['UPLOAD_FOLDER'] = 'static/uploads'  # Cartella per salvare le immagini
+app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif'}  # Estensioni consentite per le immagini
 
+# Inizializzazione di SQLAlchemy
 db = SQLAlchemy(app)
-migrate = Migrate(app, db)
 
+# Inizializzazione di Flask-Migrate
+migrate = Migrate(app, db)  # Ora `app` e `db` sono definiti
+
+# Modello per gli utenti
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
-    role = db.Column(db.String(20), default='user')
+    role = db.Column(db.String(20), default='user')  # Campo per il ruolo (admin/user)
 
+# Modello per i post
 class Post(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
     content = db.Column(db.Text, nullable=False)
-    image_url = db.Column(db.String(500))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    image_url = db.Column(db.String(500))  # URL dell'immagine su Cloudinary
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)  # Data di creazione
 
+# Funzione per verificare le estensioni dei file
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
+# Route per la home page
 @app.route('/')
 def home():
+    # Recupera tutti i post dal database, ordinati per ID (dal più recente)
     posts = Post.query.order_by(Post.id.desc()).all()
     return render_template('home.html', posts=posts)
 
+# Route per il caricamento delle immagini su Cloudinary
 @app.route('/upload-image', methods=['POST'])
 def upload_image():
     if 'image' not in request.files:
@@ -56,13 +66,16 @@ def upload_image():
         return jsonify({'error': 'Nessun file selezionato'}), 400
 
     try:
+        # Carica l'immagine su Cloudinary
         result = cloudinary.uploader.upload(file)
         return jsonify({'url': result['secure_url']})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# Route per la registrazione
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+    # Solo l'admin può accedere alla pagina di registrazione
     if 'user_id' not in session or session.get('user_role') != 'admin':
         flash('Accesso negato. Solo l\'admin può registrare nuovi utenti.')
         return redirect(url_for('home'))
@@ -70,7 +83,7 @@ def register():
     if request.method == 'POST':
         username = request.form['username']
         password = generate_password_hash(request.form['password'])
-        role = request.form.get('role', 'user')
+        role = request.form.get('role', 'user')  # Imposta il ruolo (admin/user)
         user = User(username=username, password=password, role=role)
         db.session.add(user)
         db.session.commit()
@@ -78,14 +91,17 @@ def register():
         return redirect(url_for('home'))
     return render_template('register.html')
 
+# Route per il login
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
 
+        # Cerca l'utente nel database
         user = User.query.filter_by(username=username).first()
 
+        # Verifica se l'utente esiste, è un admin e la password è corretta
         if user and user.role == 'admin' and check_password_hash(user.password, password):
             session['user_id'] = user.id
             session['user_role'] = user.role
@@ -95,6 +111,7 @@ def login():
             flash('Accesso negato. Solo l\'admin può accedere.')
     return render_template('login.html')
 
+# Route per cancellare un post
 @app.route('/delete/<int:post_id>')
 def delete_post(post_id):
     if 'user_id' not in session or session.get('user_role') != 'admin':
@@ -107,6 +124,7 @@ def delete_post(post_id):
     flash('Post cancellato con successo!')
     return redirect(url_for('home'))
 
+# Route per modificare un post
 @app.route('/edit/<int:post_id>', methods=['GET', 'POST'])
 def edit_post(post_id):
     if 'user_id' not in session or session.get('user_role') != 'admin':
@@ -123,12 +141,14 @@ def edit_post(post_id):
 
     return render_template('edit_post.html', post=post)
 
+# Route per il logout
 @app.route('/logout')
 def logout():
     session.pop('user_id', None)
     flash('Logout effettuato con successo!')
     return redirect(url_for('home'))
 
+# Route per la dashboard (creazione di nuovi post)
 @app.route('/dashboard', methods=['GET', 'POST'])
 def dashboard():
     if 'user_id' not in session:
@@ -140,11 +160,13 @@ def dashboard():
         content = request.form['content']
         image = request.files['image']
 
+        # Gestisci il caricamento dell'immagine su Cloudinary
         image_url = None
         if image and allowed_file(image.filename):
             result = cloudinary.uploader.upload(image)
-            image_url = result['secure_url']
+            image_url = result['secure_url']  # URL pubblico dell'immagine
 
+        # Crea il post nel database
         post = Post(title=title, content=content, image_url=image_url)
         db.session.add(post)
         db.session.commit()
@@ -153,7 +175,3 @@ def dashboard():
 
     return render_template('dashboard.html')
 
-if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()  # Crea le tabelle se non esistono
-    app.run(debug=True)
