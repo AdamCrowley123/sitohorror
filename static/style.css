@@ -1,0 +1,124 @@
+/* Stile generale */
+body {
+    font-family: 'Courier New', Courier, monospace;
+    background-color: #000; /* Sfondo nero per i lati */
+    color: #e0e0e0; /* Testo grigio chiaro */
+    margin: 0;
+    padding: 0;
+    line-height: 1.6;
+    background-image: url('{{ url_for("static", filename="background.jpg") }}'); /* Sfondo personalizzato */
+    background-size: cover; /* Copre l'intera area */
+    background-attachment: fixed; /* Lo sfondo rimane fisso durante lo scroll */
+}
+
+/* Contenitore centrale */
+.container {
+    max-width: 1200px; /* Larghezza massima del contenuto */
+    margin: 0 auto; /* Centra il contenuto */
+    background-color: #1a1a1a; /* Sfondo scuro per il contenuto */
+    box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.8); /* Ombra per un effetto "fluttuante" */
+}
+
+/* Banner fisso in alto */
+.banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background-color: #1a1a1a; /* Sfondo scuro */
+    color: #ff4444; /* Testo rosso sangue */
+    padding: 10px 20px;
+    text-align: center;
+    z-index: 1000; /* Assicura che il banner sia sopra gli altri elementi */
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.5); /* Ombra per un effetto "fluttuante" */
+}
+
+/* Layout a due colonne */
+.content {
+    display: flex;
+    margin-top: 80px; /* Spazio per il banner */
+    padding: 20px; /* Spaziatura interna */
+}
+
+/* Colonna sinistra (sidebar) */
+.sidebar {
+    width: 25%; /* Larghezza della sidebar */
+    background-color: #2a2a2a; /* Sfondo scuro */
+    padding: 20px;
+    box-shadow: 4px 0px 10px rgba(0, 0, 0, 0.5); /* Ombra a destra */
+}
+
+.sidebar h2 {
+    color: #ff4444; /* Titolo rosso sangue */
+}
+
+.sidebar ul {
+    list-style-type: none; /* Rimuovi i pallini dell'elenco */
+    padding: 0;
+}
+
+.sidebar ul li {
+    margin: 10px 0;
+}
+
+.sidebar ul li a {
+    color: #e0e0e0; /* Testo grigio chiaro */
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.sidebar ul li a:hover {
+    color: #ff4444; /* Rosso sangue al passaggio del mouse */
+}
+
+/* Colonna destra (contenuto principale) */
+.main-content {
+    width: 75%; /* Larghezza del contenuto principale */
+    padding: 20px;
+}
+
+/* Stile per i post */
+.post {
+    background: #2a2a2a; /* Sfondo grigio scuro */
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0px 0px 15px rgba(255, 0, 0, 0.3); /* Ombra rossa */
+    margin-bottom: 20px;
+}
+
+.post h2 {
+    color: #ff4444; /* Titolo rosso sangue */
+}
+
+.post p {
+    color: #e0e0e0; /* Testo grigio chiaro */
+}
+
+/* Stile per le immagini nei post */
+.post img {
+    max-width: 100%; /* L'immagine non supera la larghezza del contenitore */
+    height: auto; /* Mantiene le proporzioni dell'immagine */
+    border-radius: 5px; /* Bordi arrotondati */
+    display: block; /* Rimuove lo spazio extra sotto l'immagine */
+    margin: 10px 0; /* Margine sopra e sotto l'immagine */
+}
+
+/* Link di navigazione */
+.navigation {
+    text-align: center;
+    margin-top: 20px;
+    padding: 10px;
+    background-color: #2a2a2a; /* Sfondo scuro */
+    box-shadow: 0px -4px 10px rgba(0, 0, 0, 0.5); /* Ombra in alto */
+}
+
+.navigation a {
+    color: #ff4444; /* Rosso sangue */
+    text-decoration: none;
+    margin: 0 10px;
+    transition: color 0.3s ease;
+}
+
+.navigation a:hover {
+    color: #cc0000; /* Rosso più scuro al passaggio del mouse */
+}

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <!-- Includi Quill CSS -->
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+</head>
+<body>
+    <h1>Crea un nuovo post</h1>
+    <form method="POST" enctype="multipart/form-data" onsubmit="return validateForm()">
+        <input type="text" name="title" placeholder="Titolo" required><br>
+        <!-- Aggiungi un contenitore per l'editor Quill -->
+        <div id="editor" style="height: 300px;"></div>
+        <!-- Campo nascosto per inviare il contenuto dell'editor -->
+        <textarea name="content" style="display: none;"></textarea><br>
+        <input type="file" name="image" accept="image/*"><br>
+        <button type="submit">Pubblica</button>
+    </form>
+    <a href="{{ url_for('home') }}">Torna alla home</a> | <a href="{{ url_for('logout') }}">Logout</a>
+
+    <!-- Includi Quill JS -->
+    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+    <!-- Script per inizializzare Quill e gestire l'invio del form -->
+    <script>
+        // Inizializza Quill
+        var quill = new Quill('#editor', {
+            theme: 'snow',
+            modules: {
+                toolbar: {
+                    container: [
+                        ['bold', 'italic', 'underline', 'strike'],
+                        ['link', 'image'],
+                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        ['clean']
+                    ],
+                    handlers: {
+                        image: imageHandler // Sovrascrivi il comportamento predefinito per le immagini
+                    }
+                }
+            }
+        });
+
+        // Handler personalizzato per il caricamento delle immagini
+        function imageHandler() {
+            const input = document.createElement('input');
+            input.setAttribute('type', 'file');
+            input.setAttribute('accept', 'image/*');
+            input.click();
+
+            input.onchange = async () => {
+                const file = input.files[0];
+                if (file) {
+                    const formData = new FormData();
+                    formData.append('image', file);
+
+                    try {
+                        const response = await fetch('/upload-image', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        const data = await response.json();
+
+                        if (data.url) {
+                            // Inserisci l'URL pubblico di Cloudinary nell'editor
+                            const range = quill.getSelection(true);
+                            quill.insertEmbed(range.index, 'image', data.url);
+                        } else {
+                            console.error('Errore nel caricamento dell\'immagine:', data.error);
+                        }
+                    } catch (error) {
+                        console.error('Errore durante il caricamento:', error);
+                    }
+                }
+            };
+        }
+
+        // Aggiorna il textarea con il contenuto di Quill prima di inviare il form
+        var form = document.querySelector('form');
+        form.onsubmit = function () {
+            var content = document.querySelector('textarea[name="content"]');
+            content.value = quill.root.innerHTML;  // Salva il contenuto HTML nel textarea
+            return true;  // Invia il form
+        };
+
+        // Funzione per la validazione del form
+        function validateForm() {
+            var content = quill.root.innerHTML;
+            if (!content || content.trim() === '<p><br></p>') {
+                alert('Il contenuto del post non può essere vuoto!');
+                return false;  // Blocca l'invio del form
+            }
+            return true;  // Invia il form
+        }
+    </script>
+</body>
+</html>

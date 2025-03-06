@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Il Blog dell'Horror</title>
+</head>
+<body>
+    <!-- Banner fisso in alto -->
+    <div class="banner">
+        <h1>Il Blog dell'Horror</h1>
+    </div>
+
+    <!-- Contenitore centrale -->
+    <div class="container">
+        <!-- Contenuto principale -->
+        <div class="content">
+            <!-- Colonna sinistra (sidebar) -->
+            <div class="sidebar">
+                <h2>Elenco Post</h2>
+                <ul>
+                    {% for post in posts %}
+                        <li><a href="#post-{{ post.id }}">{{ post.title }}</a></li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <!-- Colonna destra (contenuto dei post) -->
+            <div class="main-content">
+                {% for post in posts %}
+                    <div id="post-{{ post.id }}" class="post">
+                        <h2>{{ post.title }}</h2>
+                        <!-- Mostra la data di creazione -->
+                        <small>
+                            Pubblicato il: 
+                            {% if post.created_at %}
+                                {{ post.created_at.strftime('%d/%m/%Y %H:%M') }}
+                            {% else %}
+                                Data non disponibile
+                            {% endif %}
+                        </small>
+                        {% if post.image_url %}
+                            <img src="{{ post.image_url }}" alt="{{ post.title }}" style="max-width: 100%; height: auto;">
+                        {% endif %}
+                        <p>{{ post.content | safe }}</p>
+                        {% if session.get('user_role') == 'admin' %}
+                            <a href="{{ url_for('edit_post', post_id=post.id) }}">Modifica</a>
+                            <a href="{{ url_for('delete_post', post_id=post.id) }}" onclick="return confirm('Sei sicuro di voler cancellare questo post?')">Cancella</a>
+                        {% endif %}
+                        <hr>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Link di navigazione -->
+        <div class="navigation">
+            <a href="{{ url_for('login') }}">Login</a> | 
+            <a href="{{ url_for('logout') }}">Logout</a>
+        </div>
+    </div>
+</body>
+</html>
