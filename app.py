@@ -1,15 +1,16 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate  # Importa Flask-Migrate
+from flask_migrate import Migrate  # Aggiungi questa importazione
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 import os
-from datetime import datetime  # Importa datetime per la data di creazione
+from datetime import datetime  # Aggiungi questa importazione
 
 import cloudinary
 import cloudinary.uploader
 import cloudinary.api
 
+# Configura Cloudinary
 cloudinary.config(
     cloud_name="dwhqxqd6f",  # Sostituisci con il tuo Cloud Name
     api_key="442426661533797",        # Sostituisci con la tua API Key
@@ -18,7 +19,7 @@ cloudinary.config(
 
 # Configurazione dell'app Flask
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////home/alex26/instance/blog.db'  # Percorso assoluto per SQLite
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///blog.db'  # Database SQLite
 app.config['SECRET_KEY'] = 'supersecretkey'  # Chiave segreta per le sessioni
 app.config['UPLOAD_FOLDER'] = 'static/uploads'  # Cartella per salvare le immagini
 app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif'}  # Estensioni consentite per le immagini
@@ -27,7 +28,7 @@ app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif'}  # Estensioni c
 db = SQLAlchemy(app)
 
 # Inizializzazione di Flask-Migrate
-migrate = Migrate(app, db)  # Ora `app` e `db` sono definiti
+migrate = Migrate(app, db)  # Assicurati che `app` e `db` siano già definiti
 
 # Modello per gli utenti
 class User(db.Model):
@@ -42,7 +43,7 @@ class Post(db.Model):
     title = db.Column(db.String(200), nullable=False)
     content = db.Column(db.Text, nullable=False)
     image_url = db.Column(db.String(500))  # URL dell'immagine su Cloudinary
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)  # Data di creazione
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)  # Aggiungi questa colonna
 
 # Funzione per verificare le estensioni dei file
 def allowed_file(filename):
@@ -75,40 +76,27 @@ def upload_image():
 # Route per la registrazione
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    # Solo l'admin può accedere alla pagina di registrazione
-    if 'user_id' not in session or session.get('user_role') != 'admin':
-        flash('Accesso negato. Solo l\'admin può registrare nuovi utenti.')
-        return redirect(url_for('home'))
-
     if request.method == 'POST':
         username = request.form['username']
         password = generate_password_hash(request.form['password'])
-        role = request.form.get('role', 'user')  # Imposta il ruolo (admin/user)
-        user = User(username=username, password=password, role=role)
+        user = User(username=username, password=password)
         db.session.add(user)
         db.session.commit()
-        flash('Utente registrato con successo!')
-        return redirect(url_for('home'))
+        flash('Registrazione completata con successo!')
+        return redirect(url_for('login'))
     return render_template('register.html')
 
 # Route per il login
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-
-        # Cerca l'utente nel database
-        user = User.query.filter_by(username=username).first()
-
-        # Verifica se l'utente esiste, è un admin e la password è corretta
-        if user and user.role == 'admin' and check_password_hash(user.password, password):
+        user = User.query.filter_by(username=request.form['username']).first()
+        if user and check_password_hash(user.password, request.form['password']):
             session['user_id'] = user.id
-            session['user_role'] = user.role
+            session['user_role'] = user.role  # Memorizza il ruolo nella sessione
             flash('Login effettuato con successo!')
             return redirect(url_for('dashboard'))
-        else:
-            flash('Accesso negato. Solo l\'admin può accedere.')
+        flash('Credenziali non valide')
     return render_template('login.html')
 
 # Route per cancellare un post
@@ -175,3 +163,9 @@ def dashboard():
 
     return render_template('dashboard.html')
 
+# Avvio dell'applicazione
+if __name__ == '__main__':
+    with app.app_context():
+        if not os.path.exists('blog.db'):
+            db.create_all()  # Crea il database se non esiste
+    app.run(debug=True)
